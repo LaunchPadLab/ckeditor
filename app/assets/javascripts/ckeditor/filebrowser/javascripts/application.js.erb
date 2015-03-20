@@ -11,6 +11,62 @@ $.QueryString = (function(a) {
 })(window.location.search.substr(1).split('&'))
 
 $(document).ready(function(){
+
+  $("form.resource_form #public_resource_format_type").on("change", function(){
+    var $fields = $(".portal_resource_field_area");
+    $fields.find("input").prop('disabled', true);
+    $fields.hide();
+    var val = $(this).val();
+    var id = "#portal_resource_" + val + "_area";
+    $(id).show();
+    $(id).find("input").prop("disabled", false);
+  });
+
+  function closeIframe($iframe) {
+    $iframe.hide();
+    $("#add-to-album").show();
+    $("#cancel-add-to-album").hide();
+  }
+
+  function openIframe($iframe) {
+    $iframe.show();
+    $("#cancel-add-to-album").show();
+    $("#add-to-album").hide();
+  }
+
+  $("#add-to-album").on('click',function(e){
+    e.preventDefault();
+    openIframe($("#folders-iframe"));
+  });
+
+  $("#cancel-add-to-album").on('click',function(e){
+    e.preventDefault();
+    closeIframe($("#folders-iframe"));
+  });
+
+  $("#js-insert-to-widget").on('click',function(e){
+    e.preventDefault();
+
+    var album_field_id = $(this).data('album-field-id');
+    var album_id = $(this).data('album-id');
+    var album_name = $(this).data('album-name');
+    var $album = $(window.opener.document.getElementById(album_field_id));
+    var $prior_option = $album.find("option[value='" + album_id + "']")
+    if ($prior_option.length == 0) {
+      $album.append($("<option></option>").attr("value", album_id).text(album_name));
+    }
+    $album.val(album_id);
+    window.close();
+  });
+
+  function parseImageUrl(url) {
+    if (url.substring(0, 4) != "http") {
+      return "http://" + FULL_URL + url
+    } else {
+      return url
+    };
+  }
+
   $("div.gal-item div.gal-inner-holder")
     .live('mouseover', function(e){
       $(this).addClass('hover');
@@ -19,12 +75,78 @@ $(document).ready(function(){
       $(this).removeClass('hover');
     })
     .live('click', function(e){
+      var input = parent.document.getElementById("content_asset_id");
       var url = $(this).parents('div.gal-item').data('url');
-      CKEDITOR.tools.callFunction(CKEditorFuncNum, url);
-      window.close();
+      var filename = $(this).parents('div.gal-item').data('filename');
+      if (input) {
+        // ALBUM WIDGET
+        var $input = $(input);
+        var content_asset_id = $(this).data('id');
+        $input.val(content_asset_id);
+        var $iframe = $(parent.document.getElementById("folders-iframe"));
+        var $add_to_album = $(parent.document.getElementById("add-to-album"))
+        var $cancel_add_to_album = $(parent.document.getElementById("cancel-add-to-album"))
+        $iframe.hide();
+        $add_to_album.show();
+        $cancel_add_to_album.hide();
+        $(parent.document.getElementById("add-content-asset")).trigger('submit');
+      } else if (EDITABLE_FILE_ID.length > 0) {
+      // EDITABLE ELEMENTS
+        // EDITABLE ELEMENT ON LOCOMOTIVE BACKOFFICE
+        var url_input = $(opener.document.getElementById(EDITABLE_FILE_ID + "_source"));
+        var filename_input = $(opener.document.getElementById(EDITABLE_FILE_ID + "_filename"));
+        var link_field = $(opener.document.getElementById(EDITABLE_FILE_ID + "_link"));
+
+        // CKEDITOR CHOSEN IMAGE FIELDS
+        var url = parseImageUrl(url);
+
+        // UPDATE EDITABLE ELEMENT
+
+        url_input.val(url);
+        filename_input.val(filename);
+        link_field.attr('href', url);
+        link_field.text(filename);
+        link_field.show();
+        window.close();
+      } else if (CONTENT_ENTRY_ID.length > 0){
+      // CONTENT ENTRY FORM
+        // CONTENT ENTRY ON LOCOMOTIVE BACKOFFICE
+
+        var $input_list_item = $(opener.document.getElementById(CONTENT_ENTRY_ID));
+        var $url_input = $input_list_item.find("input");
+        var $view_link = $input_list_item.find(".image-filename")
+        var $view_link_area = $input_list_item.find(".image-filename-area")
+
+        var url = parseImageUrl(url);
+        $url_input.val(url);
+        $url_input.text(url);
+        $url_input.trigger("change");
+
+        $view_link.attr("href", url);
+        $view_link.text(filename);
+        $view_link_area.show();
+
+        // SHOW VIEW LINK
+
+
+        window.close();
+
+      } else {
+        // DEFAULT CKEDITOR BEHAVIOR
+        CKEDITOR.tools.callFunction(CKEditorFuncNum, url);
+        window.close();
+      };
     });
-  
+
+  $('.insert-public-resource').on('click', function(e){
+    e.preventDefault();
+    var url = $(this).data('url');
+    CKEDITOR.tools.callFunction(CKEditorFuncNum, url);
+    window.close();
+  });
+
   $("div.gal-item a.gal-del").live('ajax:complete', function(xhr, status){
+    console.log("completed ajax and about to delete picture");
     $(this).parents('div.gal-item').remove();
   });
 
@@ -49,15 +171,15 @@ qq.FileUploader.instances = new Object();
 qq.FileUploaderInput = function(o){
     // call parent constructor
     qq.FileUploaderBasic.apply(this, arguments);
-    
-    // additional options    
+
+    // additional options
     qq.extend(this._options, {
         element: null,
         // if set, will be used instead of qq-upload-list in template
         listElement: null,
-        
-        template_id: '#fileupload_tmpl',       
-        
+
+        template_id: '#fileupload_tmpl',
+
         classes: {
             // used to get elements from templates
             button: 'fileupload-button',
@@ -65,7 +187,7 @@ qq.FileUploaderInput = function(o){
             dropActive: 'fileupload-drop-area-active',
             list: 'fileupload-list',
             preview: 'fileupload-preview',
-                        
+
             file: 'fileupload-file',
             spinner: 'fileupload-spinner',
             size: 'fileupload-size',
@@ -77,18 +199,18 @@ qq.FileUploaderInput = function(o){
             fail: 'fileupload-fail'
         }
     });
-    // overwrite options with user supplied    
-    qq.extend(this._options, o);       
+    // overwrite options with user supplied
+    qq.extend(this._options, o);
 
     this._element = document.getElementById(this._options.element);
     this._listElement = this._options.listElement || this._find(this._element, 'list');
-    
+
     this._classes = this._options.classes;
-        
-    this._button = this._createUploadButton(this._find(this._element, 'button'));  
-    
+
+    this._button = this._createUploadButton(this._find(this._element, 'button'));
+
     //this._setupDragDrop();
-    
+
     qq.FileUploader.instances[this._element.id] = this;
 };
 
@@ -99,18 +221,18 @@ qq.extend(qq.FileUploaderInput.prototype, {
     /**
      * Gets one of the elements listed in this._options.classes
      **/
-    _find: function(parent, type){                                
-        var element = qq.getByClass(parent, this._options.classes[type])[0];        
+    _find: function(parent, type){
+        var element = qq.getByClass(parent, this._options.classes[type])[0];
         if (!element){
           alert(type);
             throw new Error('element not found ' + type);
         }
-        
+
         return element;
     },
     _setupDragDrop: function(){
         var self = this,
-            dropArea = this._find(this._element, 'drop');                        
+            dropArea = this._find(this._element, 'drop');
 
         var dz = new qq.UploadDropZone({
             element: dropArea,
@@ -122,49 +244,49 @@ qq.extend(qq.FileUploaderInput.prototype, {
                 e.stopPropagation();
             },
             onLeaveNotDescendants: function(e){
-                qq.removeClass(dropArea, self._classes.dropActive);  
+                qq.removeClass(dropArea, self._classes.dropActive);
             },
             onDrop: function(e){
                 dropArea.style.display = 'none';
                 qq.removeClass(dropArea, self._classes.dropActive);
-                self._uploadFileList(e.dataTransfer.files);    
+                self._uploadFileList(e.dataTransfer.files);
             }
         });
-                
+
         dropArea.style.display = 'none';
 
-        qq.attach(document, 'dragenter', function(e){     
-            if (!dz._isValidFileDrag(e)) return; 
-            
-            dropArea.style.display = 'block';            
-        });                 
+        qq.attach(document, 'dragenter', function(e){
+            if (!dz._isValidFileDrag(e)) return;
+
+            dropArea.style.display = 'block';
+        });
         qq.attach(document, 'dragleave', function(e){
-            if (!dz._isValidFileDrag(e)) return;            
-            
+            if (!dz._isValidFileDrag(e)) return;
+
             var relatedTarget = document.elementFromPoint(e.clientX, e.clientY);
             // only fire when leaving document out
-            if ( ! relatedTarget || relatedTarget.nodeName == "HTML"){               
-                dropArea.style.display = 'none';                                            
+            if ( ! relatedTarget || relatedTarget.nodeName == "HTML"){
+                dropArea.style.display = 'none';
             }
-        });                
+        });
     },
     _onSubmit: function(id, fileName){
         qq.FileUploaderBasic.prototype._onSubmit.apply(this, arguments);
-        this._addToList(id, fileName);  
+        this._addToList(id, fileName);
     },
     _onProgress: function(id, fileName, loaded, total){
         qq.FileUploaderBasic.prototype._onProgress.apply(this, arguments);
 
         var item = this._getItemByFileId(id);
         var size = this._find(item, 'size');
-        
-        var text; 
+
+        var text;
         if (loaded != total){
             text = Math.round(loaded / total * 100) + '% from ' + this._formatSize(total);
-        } else {                                   
+        } else {
             text = this._formatSize(total);
-        }          
-        
+        }
+
         qq.setText(size, text);
     },
     _onComplete: function(id, fileName, result){
@@ -172,13 +294,13 @@ qq.extend(qq.FileUploaderInput.prototype, {
 
         var item = this._getItemByFileId(id);
         var asset = result.asset ? result.asset : result;
-        
+
         if (asset && asset.id){
             qq.addClass(item, this._classes.success);
-            
+
             asset.size = this._formatSize(asset.size);
             asset.controller = (asset.type !== undefined && asset.type.toLowerCase() == "ckeditor::picture" ? "pictures" : "attachment_files");
-            
+
             $(item).replaceWith($(this._options.template_id).tmpl(asset));
         } else {
             qq.addClass(item, this._classes.fail);
@@ -189,37 +311,37 @@ qq.extend(qq.FileUploaderInput.prototype, {
           if (this._options.multiple === false) {
             $(this._listElement).empty();
           }
-          
+
           var asset = {
-            id: 0, 
-            filename: this._formatFileName(fileName), 
+            id: 0,
+            filename: this._formatFileName(fileName),
             size: 0,
             format_created_at: '',
             url_content: "#",
             controller: "assets",
             url_thumb: "<%= asset_path('ckeditor/filebrowser/images/preloader.gif') %>"
           };
-          
+
           var item = $(this._options.template_id)
             .tmpl(asset)
             .attr('qqfileid', id)
             .prependTo( this._listElement );
-          
+
           item.find('div.img').addClass('preloader');
-          
+
           this._bindCancelEvent(item);
         }
     },
     _getItemByFileId: function(id){
-        return $(this._listElement).find('div[qqfileid=' + id  +']').get(0); 
+        return $(this._listElement).find('div[qqfileid=' + id  +']').get(0);
     },
     /**
-     * delegate click event for cancel link 
+     * delegate click event for cancel link
      **/
     _bindCancelEvent: function(element){
         var self = this,
-            item = $(element);        
-        
+            item = $(element);
+
         item.find('a.' + this._classes.cancel).bind('click', function(e){
           self._handler.cancel( item.attr('qqfileid') );
           item.remove();

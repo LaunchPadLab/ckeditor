@@ -23,13 +23,15 @@ CKEDITOR.editorConfig = function( config )
   config.filebrowserImageBrowseLinkUrl = "/ckeditor/pictures";
 
   // The location of an external file browser, that should be launched when "Browse Server" button is pressed in the Image dialog.
-  config.filebrowserImageBrowseUrl = "/ckeditor/pictures";
+  config.filebrowserImageBrowseUrl = "/ckeditor/folders";
 
   // The location of a script that handles file uploads in the Image dialog.
   config.filebrowserImageUploadUrl = "/ckeditor/pictures";
 
   // The location of a script that handles file uploads.
   config.filebrowserUploadUrl = "/ckeditor/attachment_files";
+
+  config.extraPlugins = 'video';
 
   // Rails CSRF token
   config.filebrowserParams = function(){

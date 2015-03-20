@@ -16,29 +16,15 @@
   <% end -%>
 
   <script type="text/javascript">
-    var CKEditorFuncNum = "<%= session[:CKEditorFuncNum] || params[:CKEditorFuncNum] %>";
-    var CKEditorName = "<%= session[:CKEditor] || params[:CKEditor] %>";
-    var CKEDITOR = parent.opener.CKEDITOR;
+    var CKEditorFuncNum = "<%= session[:CKEditorFuncNum] %>";
+    var CKEditorName = "<%= session[:CKEditor] %>";
+    var CKEDITOR = window.opener.CKEDITOR;
     var EDITOR = CKEDITOR.instances[CKEditorName];
-    var EDITABLE_FILE_ID = "<%= session[:editable_file_field_id] %>";
-    var CONTENT_ENTRY_ID = "<%= session[:content_entry_field_id] %>";
-    var FULL_URL = "<%= session[:full_url] %>";
   </script>
-
 </head>
-<body class="ckeditor">
-  <%= yield(:sidebar) %>
-  <div class="content-area">
-    <div class="title-area">
-      <%= yield(:title) %>
-    </div>
-    <div class="upload-area">
-      <div class="notice-area">
-        <%= yield(:notices) %>
-      </div>
-      <%= yield %>
-    </div>
-    <%= render :partial => 'ckeditor/shared/asset_tmpl' %>
-  </div>
+<body>
+
+  <%= yield %>
+
 </body>
 </html>
